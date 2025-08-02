@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Check if user already exists
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
@@ -24,8 +25,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User already exists' }, { status: 400 });
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, salt_to_mix);
 
+    // Insert new user
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert({
@@ -37,13 +40,14 @@ export async function POST(req: NextRequest) {
         profile_image_url: null,
         created_at: new Date().toISOString(),
       })
-      .select('*')
+      .select('id, name, email, dob, bio, profile_image_url, created_at')
       .single();
 
     if (insertError) {
       return NextResponse.json({ error: 'User insert failed', details: insertError }, { status: 500 });
     }
 
+    // Generate JWT
     const token = jwt.sign(
       {
         id: newUser.id,
@@ -54,7 +58,19 @@ export async function POST(req: NextRequest) {
       { expiresIn: '1d' }
     );
 
-    return NextResponse.json({ token, user: newUser }, { status: 201 });
+    // Create response 
+    const response = NextResponse.json({ message: 'Signup successful', 'user_data': newUser }, { status: 201 });
+
+    // set cookie
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 1 day
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error', details: error }, { status: 500 });
   }

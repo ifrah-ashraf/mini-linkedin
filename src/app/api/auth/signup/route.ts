@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Create response 
-    const response = NextResponse.json({ message: 'Signup successful', 'user_data': newUser }, { status: 201 });
+    const response = NextResponse.json({ message: 'Signup successful', user : newUser }, { status: 201 });
 
     // set cookie
     response.cookies.set('token', token, {

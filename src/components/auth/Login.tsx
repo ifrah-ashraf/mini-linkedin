@@ -3,27 +3,36 @@
 import { loginUser } from "@/lib/auth_api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-/* type Props = {
-  onSwitch: () => void;
-}; */
+import { useUserStore } from "@/stores/useUserStore"; 
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter()
+
+  const router = useRouter();
+  const setUser = useUserStore((state) => state.setUser);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-        const data = await loginUser({email , password})
-        if(data){
-            console.log("The data is ", data)
-            router.push("/home")
-        }
+      const data = await loginUser({ email, password });
+
+      if (data && data.user) {
+        console.log("The user data is:", data.user);
+
+        setUser({
+          name: data.user.name,
+          email: data.user.email,
+          bio: data.user.bio,
+          created_at: data.user.created_at || null,
+          profile_image_url: data.user.profile_image_url || null,
+        });
+
+        router.push("/home");
+      }
     } catch (error) {
-        alert(error || "Login failed");
+      alert(error || "Login failed");
     }
   };
 
@@ -62,4 +71,4 @@ export default function Login() {
       </form>
     </div>
   );
-} 
+}

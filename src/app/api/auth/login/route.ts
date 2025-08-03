@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Remove password before sending user back to client
-    const { password: _, ...safeUser } = user;
+    const { password: _ , ...safeUser } = user;
 
     // Create response
     const response = NextResponse.json({ user: safeUser }, { status: 200 });

@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
-  withCredentials: true, // important if using HttpOnly cookies
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api",
+  withCredentials: true, // Sends HttpOnly cookies
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 

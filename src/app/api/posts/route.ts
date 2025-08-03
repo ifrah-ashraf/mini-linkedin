@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     if (!token) {
         return NextResponse.json({ error: "Unauthorized: Token missing" }, { status: 401 });
     }
+
     let decoded: JwtPayload;
     try {
         decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
             user_id: post.user_id,
             author_name:
                 post.users && !Array.isArray(post.users)
-                    ? post.users.name 
+                    ? post.users 
                     : "Unknown User",
         }))
         : [];

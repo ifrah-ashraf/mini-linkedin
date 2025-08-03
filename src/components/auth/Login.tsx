@@ -3,9 +3,15 @@
 import { loginUser } from "@/lib/auth_api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useUserStore } from "@/stores/useUserStore"; 
+import { useUserStore } from "@/stores/useUserStore";
 
-export default function Login() {
+export default function Login({
+  loading,
+  setLoading,
+}: {
+  loading: boolean;
+  setLoading: (val: boolean) => void;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -14,6 +20,7 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       const data = await loginUser({ email, password });
@@ -29,10 +36,14 @@ export default function Login() {
           profile_image_url: data.user.profile_image_url || null,
         });
 
+        // dummy to give time ti hydrate the zustand state
         router.push("/home");
+        router.refresh();
       }
     } catch (error) {
       alert(error || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,7 +77,7 @@ export default function Login() {
           type="submit"
           className="w-full bg-[#0A66C2] text-white py-2 px-4 rounded-md hover:bg-[#004182] transition-colors duration-200 cursor-pointer"
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>

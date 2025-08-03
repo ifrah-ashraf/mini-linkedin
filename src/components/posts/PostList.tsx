@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axiosInstance from "@/lib/axios";
+import SkeletonPost from "../layout/SkeletonPost";
 
 interface Post {
   id: string;
@@ -12,19 +13,32 @@ interface Post {
 
 export default function PostList() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchPosts = async () => {
     try {
       const res = await axiosInstance.get("/posts");
       setPosts(res.data.posts);
     } catch (err) {
-      console.error("Failed to fetch posts");
+      console.error(`Failed to fetch posts ${err}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <SkeletonPost key={i} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -34,7 +48,9 @@ export default function PostList() {
             <div className="w-10 h-10 bg-gray-300 rounded-full" />
             <div>
               <p className="font-semibold">{post.author_name}</p>
-              <p className="text-xs text-gray-500">{new Date(post.created_at).toLocaleString()}</p>
+              <p className="text-xs text-gray-500">
+                {new Date(post.created_at).toLocaleString()}
+              </p>
             </div>
           </div>
           <p className="mb-2">{post.content}</p>

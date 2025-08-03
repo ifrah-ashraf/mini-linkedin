@@ -1,72 +1,88 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useUserStore } from "@/stores/useUserStore";
+import { signupUser } from "@/lib/auth_api";
+import { SignupPayload } from "@/types";
 
-/* type Props = {
-  onSwitch: () => void;
-}; */
+export default function Signup({
+  loading,
+  setLoading,
+}: {
+  loading: boolean;
+  setLoading: (val: boolean) => void;
+}) {
+  const router = useRouter();
+  const setUser = useUserStore((state) => state.setUser);
 
-export default function Signup() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState<SignupPayload>({
+    name: "",
+    email: "",
+    password: "",
+    dob: "",
+    bio: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: call signup API
+    setLoading(true);
+    try {
+      const data = await signupUser(formData);
+      setUser(data.user); 
+      router.push("/home");
+    } catch (err) {
+      alert( `Signup failed ${err}`);
+    }finally{
+        setLoading(false)
+    }
   };
 
   return (
     <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md mx-auto">
       <h2 className="text-2xl font-bold mb-6 text-center">Create an Account</h2>
       <form onSubmit={handleSignup} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <input
-            type="text"
-            className="w-full border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
+
+        {["name", "email", "password", "dob"].map((field) => (
+          <div key={field}>
+            <label className="block text-sm font-medium mb-1 capitalize">
+              {field === "dob" ? "Date of Birth" : field}
+            </label>
+            <input
+              type={field === "password" ? "password" : field === "dob" ? "date" : "text"}
+              name={field}
+              value={formData[field as keyof SignupPayload]}
+              onChange={handleChange}
+              required
+              className="w-full border border-gray-300 px-4 py-2 rounded-md"
+            />
+          </div>
+        ))}
 
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            type="email"
-            className="w-full border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+          <label className="block text-sm font-medium mb-1">Bio</label>
+          <textarea
+            name="bio"
+            value={formData.bio}
+            onChange={handleChange}
+            rows={3}
+            className="w-full border border-gray-300 px-4 py-2 rounded-md resize-none"
             required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            type="password"
-            className="w-full border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          ></textarea>
         </div>
 
         <button
           type="submit"
-          className="w-full bg-[#0A66C2] text-white py-2 px-4 rounded-md hover:bg-[#004182] transition-colors duration-200 cursor-pointer"
+          className="w-full bg-[#0A66C2] text-white py-2 px-4 rounded-md hover:bg-[#004182] transition-colors duration-200"
         >
           Sign Up
         </button>
       </form>
-
-      {/* <p className="mt-4 text-center text-sm">
-        Already have an account?{' '}
-        <button onClick={onSwitch} className="text-blue-600 hover:underline">
-          Login
-        </button>
-      </p> */}
     </div>
   );
 }

@@ -3,25 +3,48 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/stores/useUserStore";
-import { FaUserCircle } from "react-icons/fa"; // React icon for avatar
+import { FaUserCircle } from "react-icons/fa";
 import { IoIosArrowDown } from "react-icons/io";
+import { logoutUser } from "@/lib/auth_api";
+import Link from "next/link"; 
+import Loader from "../layout/Loader";
 
-export default function AppNavbar() {
+export default function AppNavbar({loading , setLoading}: {loading : boolean , setLoading:(val:boolean) => void}) {
   const { user, clearUser } = useUserStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const router = useRouter();
-  
-   if (!user) return null;
 
-  const handleLogout = () => {
-    clearUser();
-    router.push("/");
+  if (!user) return null;
+
+  const handleLogout = async () => {
+    setLoading(true)
+    try {
+      const res = await logoutUser();
+      if (res) {
+        clearUser();
+        router.replace("/");
+      }
+    } catch (error) {
+      alert(`Error while logout ${error}`);
+    }finally{
+      setLoading(false)
+    }
   };
+
+  if(loading){
+    return <Loader/>
+  }
 
   return (
     <nav className="w-full lg:w-[70%] mx-auto p-4 border-b bg-white shadow-md">
       <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl flex justify-between items-center">
-        <div className="text-2xl font-bold text-[#0A66C2]">Linkedin</div>
+        
+        {/* ✅ Wrap in Link for navigation */}
+        <Link href="/home">
+          <span className="text-2xl font-bold text-[#0A66C2] cursor-pointer hover:underline">
+            Linkedin
+          </span>
+        </Link>
 
         <div className="relative flex items-center space-x-2 cursor-pointer">
           <FaUserCircle

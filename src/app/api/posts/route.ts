@@ -1,7 +1,27 @@
 import supabase from "@/lib/supabaseClient";
-import { JwtPayload  , PostWithAuthor} from "@/types";
+import { JwtPayload } from "@/types";
 import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
+
+// Correct Supabase response type
+type SupabasePostResponse = {
+    id: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+    user_id: string;
+    users: { name: string } | null; // ✅ fix: object, not array
+};
+
+// Final response shape
+export type PostWithAuthor = {
+    id: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+    user_id: string;
+    author_name: string;
+};
 
 export async function GET(req: NextRequest) {
     const token = req?.cookies.get("token")?.value;
@@ -45,10 +65,11 @@ export async function GET(req: NextRequest) {
             user_id: post.user_id,
             author_name:
                 post.users && !Array.isArray(post.users)
-                    ? post.users 
+                    ? post.users.name 
                     : "Unknown User",
         }))
         : [];
+
 
     return NextResponse.json({ posts: postsWithAuthor }, { status: 200 });
 }

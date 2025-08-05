@@ -8,7 +8,7 @@ interface Post {
   id: string;
   content: string;
   created_at: string;
-  author_name: string;
+  author_name: {name: string};
 }
 
 export default function PostList() {
@@ -47,7 +47,7 @@ export default function PostList() {
           <div className="flex items-center space-x-3 mb-2">
             <div className="w-10 h-10 bg-gray-300 rounded-full" />
             <div>
-              <p className="font-semibold">{post.author_name}</p>
+              <p className="font-semibold">{post.author_name.name}</p>
               <p className="text-xs text-gray-500">
                 {new Date(post.created_at).toLocaleString()}
               </p>

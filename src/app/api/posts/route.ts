@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+
     const postsWithAuthor: PostWithAuthor[] = Array.isArray(data)
         ? data.map((post) => ({
             id: post.id,
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
             user_id: post.user_id,
             author_name:
                 post.users && !Array.isArray(post.users)
-                    ? post.users.name 
+                    ? post.users 
                     : "Unknown User",
         }))
         : [];

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
+  baseURL: "/api",
   withCredentials: true, // Sends HttpOnly cookies
   headers: {
     "Content-Type": "application/json",

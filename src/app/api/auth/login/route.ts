@@ -8,42 +8,66 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = body;
 
+    console.log('Login request for email:', email);
+
     if (!email || !password) {
+      console.warn('Email or password not provided');
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
-    // Fetch user data (includes password for comparison)
+
+    // Check environment variables
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Key present:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    console.log('JWT_SECRET present:', !!process.env.JWT_SECRET);
+
+    // Query Supabase
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .single();
 
-    if (error || !user) {
+    if (error) {
+      console.error('Supabase query error:', error.message);
+    }
+
+    if (!user) {
+      console.warn('No user found for email:', email);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
-    // Compare password hash
+
+    // Compare passwords
     const passwordMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match:', passwordMatch);
+
     if (!passwordMatch) {
+      console.warn('Incorrect password for email:', email);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
-    // Generate JWT
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '1d' }
-    );
 
-    // Remove password before sending user back to client
-    const { password: _ , ...safeUser } = user;
+    // Sign JWT
+    let token: string;
+    try {
+      token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: '1d' }
+      );
+    } catch (err) {
+      console.error('JWT signing failed:', err);
+      return NextResponse.json({ error: 'JWT creation failed' }, { status: 500 });
+    }
 
-    // Create response
+    const { password: _, ...safeUser } = user;
+
+    console.log('Login successful, setting cookie');
+
     const response = NextResponse.json({ user: safeUser }, { status: 200 });
 
-    // Set HttpOnly cookie
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -54,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.json({ error: 'Internal server error', details: error }, { status: 500 });
+    console.error('Unexpected login error:', error );
+    return NextResponse.json({ error: 'Internal server error', details:  error }, { status: 500 });
   }
 }

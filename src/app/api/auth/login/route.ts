@@ -8,90 +8,70 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = body;
 
-    console.log('[Login] Request for:', email);
-
     if (!email || !password) {
-      console.warn('[Login] Missing email or password');
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
     }
 
-    // ENV check
+    // Validate email and password format (basic check)
+    if (!email ||  !password) {
+      return NextResponse.json({ error: 'Invalid input format.' }, { status: 400 });
+    }
+
+    // Check required env vars
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const jwtSecret = process.env.JWT_SECRET;
 
     if (!supabaseUrl || !supabaseKey || !jwtSecret) {
-      console.error('[Env Check] Missing one or more required env vars');
+      console.error('[Server] Missing environment variables.');
       return NextResponse.json(
-        {
-          error: 'Server misconfiguration',
-          hint: {
-            NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
-            NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseKey,
-            JWT_SECRET: !!jwtSecret,
-          },
-        },
+        { error: 'Server misconfiguration. for env variable' },
         { status: 500 }
       );
     }
 
     if (/\r|\n/.test(supabaseKey)) {
-      console.error('[Env Check] Supabase key contains newline characters. Clean your .env.');
+      console.error('[Env] Supabase API key contains newline characters.');
       return NextResponse.json(
-        { error: 'Invalid Supabase API key: contains newline characters' },
+        { error: 'Invalid Supabase API key.' },
         { status: 500 }
       );
     }
 
-    // Query Supabase
+    // Lookup user in Supabase
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .single();
 
-    if (error) {
-      console.error('[Supabase] Query error:', error.message);
-      return NextResponse.json({ error: 'Database error', details: error.message }, { status: 500 });
+    if (error || !user) {
+      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
     }
 
-    if (!user) {
-      console.warn('[Login] User not found:', email);
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
-
-    // Password check
+    // Compare password
     const passwordMatch = await bcrypt.compare(password, user.password);
-    console.log('[Login] Password match:', passwordMatch);
-
     if (!passwordMatch) {
-      console.warn('[Login] Incorrect password');
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
     }
 
-    // JWT sign
+    // Create JWT
     let token: string;
     try {
       token = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
+        { id: user.id, email: user.email, name: user.name },
         jwtSecret,
         { expiresIn: '1d' }
       );
     } catch (err) {
-      console.error('[JWT] Signing failed:', err);
-      return NextResponse.json({ error: 'JWT creation failed' }, { status: 500 });
+      console.error('[JWT] Error signing token:', err);
+      return NextResponse.json({ error: 'JWT generation failed.' }, { status: 500 });
     }
 
     const { password: _, ...safeUser } = user;
 
-    console.log('[Login] Success. Setting cookie.');
-
+    // Set cookie with token
     const response = NextResponse.json({ user: safeUser }, { status: 200 });
-
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -102,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('[Login] Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error', details: error }, { status: 500 });
+    console.error('[Login API] Internal error:', error);
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
